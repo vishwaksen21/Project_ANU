@@ -6,7 +6,7 @@ import time
 from dotenv import load_dotenv
 from core.voice import speak, listen
 from core.registry import SkillRegistry
-from core.engine import JarvisEngine
+from core.engine import AnuEngine
 from gui.app import run_gui as run_gui_app
 
 # Load Env
@@ -16,18 +16,18 @@ if not os.environ.get("GROQ_API_KEY"):
     print("Error: GROQ_API_KEY not found.")
     sys.exit(1)
 
-def jarvis_loop(pause_event, registry, args):
+def anu_loop(pause_event, registry, args):
     """
-    Main loop for JARVIS, running in a separate thread.
+    Main loop for ANU, running in a separate thread.
     Checks pause_event to determine if it should listen/process.
     """
     # Initialize Engine
-    jarvis = JarvisEngine(registry)
+    anu = AnuEngine(registry)
 
     if args.text:
-        print("JARVIS: Jarvis Online. Ready for command (Text Mode).")
+        print("ANU: Hello! I'm ANU, your AI assistant. How can I help you today? (Text Mode)")
     else:
-        speak("Jarvis Online. Ready for command.")
+        speak("Hello! I'm ANU, your AI assistant. How can I help you today?")
 
     while True:
         # Check for pause
@@ -48,30 +48,31 @@ def jarvis_loop(pause_event, registry, args):
             continue
 
         if user_query == "none" or not user_query: continue
+        
         if "quit" in user_query: 
-            print("Shutting down JARVIS loop...")
-            # We can't easily kill the main thread (GUI) from here, 
-            # but we can stop this loop. The user will have to close the GUI.
-            speak("Shutting down.")
+            print("Shutting down ANU...")
+            speak("Goodbye! Have a wonderful day!")
             break
         
         # Wake word / Command filtering Logic
         direct_commands = [
             "open", "volume", "search", "create", "write", "read", "make",
-            "who", "what", "when", "where", "how", "why", "thank", "hello"
+            "who", "what", "when", "where", "how", "why", "thank", "hello", "hi",
+            "import", "add", "send", "message", "list", "show", "tell", "play"
         ]
         
         is_direct = any(cmd in user_query for cmd in direct_commands)
         
-        if "jarvis" not in user_query and not is_direct:
+        # Changed wake word from "jarvis" to "anu"
+        if "anu" not in user_query and not is_direct:
             print(f"Ignored: {user_query}")
             continue
             
-        clean_query = user_query.replace("jarvis", "").strip()
+        clean_query = user_query.replace("anu", "").strip()
         
         try:
             print(f"Thinking: {clean_query}")
-            response = jarvis.run_conversation(clean_query)
+            response = anu.run_conversation(clean_query)
             
             # Check pause before speaking response
             if pause_event.is_set():
@@ -79,38 +80,39 @@ def jarvis_loop(pause_event, registry, args):
 
             if response:
                 if args.text:
-                    print(f"JARVIS: {response}")
+                    print(f"ANU: {response}")
                 else:
                     speak(response)
         except Exception as e:
             print(f"Main Loop Error: {e}")
             if args.text:
-                print("JARVIS: System error.")
+                print("ANU: I'm experiencing a system error. Please try again.")
             else:
-                speak("System error.")
+                speak("I'm experiencing a system error. Please try again.")
 
 def main():
-    parser = argparse.ArgumentParser(description="JARVIS AI Assistant")
+    print("Starting ANU...")
+    parser = argparse.ArgumentParser(description="ANU - AI Assistant")
     parser.add_argument("--text", action="store_true", help="Run in text mode (no voice I/O)")
     args = parser.parse_args()
 
     # 1. Setup Pause Event
-    # Event is SET when PAUSED, CLEARED when RUNNING
     pause_event = threading.Event()
     context = {"pause_event": pause_event}
 
     # 2. Initialize Registry and Load Skills
+    print("Loading skills...")
     registry = SkillRegistry()
     skills_dir = os.path.join(os.path.dirname(__file__), "skills")
     registry.load_skills(skills_dir, context=context)
     
-    # 3. Start JARVIS Loop in Background Thread
-    # Daemon thread so it dies when GUI closes
-    t = threading.Thread(target=jarvis_loop, args=(pause_event, registry, args), daemon=True)
+    # 3. Start ANU Loop in Background Thread
+    print("Starting ANU...")
+    t = threading.Thread(target=anu_loop, args=(pause_event, registry, args), daemon=True)
     t.start()
     
     # 4. Start GUI in Main Thread (Required for PyQt)
-    # This will block until the window is closed
+    print("Launching GUI...")
     run_gui_app(pause_event)
 
 if __name__ == "__main__":

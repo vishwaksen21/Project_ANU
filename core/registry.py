@@ -28,6 +28,15 @@ class SkillRegistry:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             
+            # First try to find register() function (new simpler pattern)
+            if hasattr(module, 'register'):
+                try:
+                    module.register(self)
+                    return  # Successfully registered using function pattern
+                except Exception as e:
+                    print(f"Failed to register skill {module_name}: {e}")
+            
+            # Fall back to class-based skills
             for name, obj in inspect.getmembers(module):
                 if inspect.isclass(obj) and issubclass(obj, Skill) and obj is not Skill:
                     try:
@@ -43,6 +52,27 @@ class SkillRegistry:
         self.skills[skill.name] = skill
         self.tools_schema.extend(skill.get_tools())
         self.functions.update(skill.get_functions())
+    
+    def register(self, name: str, func: Callable, description: str, 
+                 parameters: Dict[str, Any], required: List[str]):
+        """Simple function registration for new-style skills"""
+        # Add to functions dict
+        self.functions[name] = func
+        
+        # Create tool schema
+        tool_schema = {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": {
+                    "type": "object",
+                    "properties": parameters,
+                    "required": required
+                }
+            }
+        }
+        self.tools_schema.append(tool_schema)
 
     def get_tools_schema(self) -> List[Dict[str, Any]]:
         return self.tools_schema

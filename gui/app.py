@@ -5,11 +5,13 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVB
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QPointF, QRectF
 from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QPolygonF, QLinearGradient
 
-# --- Colors ---
-PRIMARY_COLOR = QColor("#00FFFF")  # Cyan
-ACCENT_COLOR = QColor("#FFFFFF")   # White
-BG_COLOR = QColor("#000000")       # Black
-WARNING_COLOR = QColor("#FFA500")  # Orange (for Pause)
+# --- Colors - Girl Theme ---
+PRIMARY_COLOR = QColor("#FF69B4")  # Hot Pink
+SECONDARY_COLOR = QColor("#DA70D6")  # Orchid Purple
+ACCENT_COLOR = QColor("#FFB6C1")   # Light Pink
+BG_COLOR = QColor("#1A0033")       # Deep Purple/Black
+WARNING_COLOR = QColor("#FF1493")  # Deep Pink (for Pause)
+GLOW_COLOR = QColor("#FFC0CB")     # Pink Glow
 
 class HexagonPanel(QWidget):
     def __init__(self, parent=None):
@@ -34,11 +36,11 @@ class HexagonPanel(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        pen = QPen(PRIMARY_COLOR)
+        # Create gradient for more feminine look
+        pen = QPen()
         pen.setWidth(2)
-        painter.setPen(pen)
         
-        # Draw grid of hexagons
+        # Draw grid of hexagons with gradient colors
         size = 30
         rows = 4
         cols = 3
@@ -47,15 +49,20 @@ class HexagonPanel(QWidget):
 
         for r in range(rows):
             for c in range(cols):
-                color = QColor(PRIMARY_COLOR)
-                # Randomize opacity slightly based on position to create "glitch" or wave effect logic could go here
-                # For now use global pulsing opacity
-                current_opacity = self.opacity
+                # Alternate between primary and secondary colors
                 if (r + c) % 2 == 0:
-                   current_opacity = max(50, current_opacity - 50)
+                    color = QColor(PRIMARY_COLOR)
+                else:
+                    color = QColor(SECONDARY_COLOR)
+                
+                # Randomize opacity slightly based on position
+                current_opacity = self.opacity
+                if (r + c) % 3 == 0:
+                   current_opacity = max(50, current_opacity - 30)
                 
                 color.setAlpha(current_opacity)
-                painter.setPen(QPen(color, 2))
+                pen.setColor(color)
+                painter.setPen(pen)
                 
                 x = x_offset + c * (size * 1.5)
                 y = y_offset + r * (size * math.sqrt(3))
@@ -92,9 +99,12 @@ class TelemetryPanel(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Draw Circuit Lines (Static decoration)
-        pen = QPen(ACCENT_COLOR)
-        pen.setWidth(2)
+        # Draw Circuit Lines (Static decoration) with gradient
+        gradient = QLinearGradient(0, 0, self.width(), self.height())
+        gradient.setColorAt(0, PRIMARY_COLOR)
+        gradient.setColorAt(1, SECONDARY_COLOR)
+        
+        pen = QPen(QBrush(gradient), 2)
         painter.setPen(pen)
         
         path_points = [
@@ -102,17 +112,27 @@ class TelemetryPanel(QWidget):
         ]
         painter.drawPolyline(QPolygonF(path_points))
         
-        # Draw Equalizer
+        # Draw Equalizer with gradient bars
         bar_width = 30
         gap = 10
         start_x = 20
         base_y = 150
         
-        painter.setBrush(QBrush(PRIMARY_COLOR))
         painter.setPen(Qt.PenStyle.NoPen)
         
         for i, h in enumerate(self.bar_heights):
             x = start_x + i * (bar_width + gap)
+            
+            # Create gradient for each bar
+            bar_gradient = QLinearGradient(x, base_y - h, x, base_y)
+            if i % 2 == 0:
+                bar_gradient.setColorAt(0, PRIMARY_COLOR)
+                bar_gradient.setColorAt(1, ACCENT_COLOR)
+            else:
+                bar_gradient.setColorAt(0, SECONDARY_COLOR)
+                bar_gradient.setColorAt(1, GLOW_COLOR)
+            
+            painter.setBrush(QBrush(bar_gradient))
             # Draw bar upwards from base_y
             painter.drawRect(QRectF(x, base_y - h, bar_width, h))
 
@@ -147,26 +167,41 @@ class CentralReactor(QWidget):
         
         # Determine Color based on Pause state
         main_color = WARNING_COLOR if self.is_paused else PRIMARY_COLOR
+        secondary = SECONDARY_COLOR if not self.is_paused else QColor("#FF1493")
         
-        # 1. Draw Core (Solid Circle)
+        # 1. Draw Core (Heart-shaped or Flower-shaped center)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(main_color))
+        
+        # Create a glowing gradient for the core
+        core_gradient = QLinearGradient(center_x - 30, center_y - 30, center_x + 30, center_y + 30)
+        core_gradient.setColorAt(0, main_color)
+        core_gradient.setColorAt(0.5, secondary)
+        core_gradient.setColorAt(1, GLOW_COLOR if not self.is_paused else WARNING_COLOR)
+        
+        painter.setBrush(QBrush(core_gradient))
         core_radius = 20
+        
         # Pulse effect for core
         if not self.is_paused:
              pulse = (math.sin(self.angle_outer * 0.1) + 1) * 5
+             # Draw a flower/star pattern
+             for i in range(6):
+                 angle = math.radians(i * 60 + self.angle_outer)
+                 x = center_x + (core_radius + pulse) * math.cos(angle)
+                 y = center_y + (core_radius + pulse) * math.sin(angle)
+                 painter.drawEllipse(QPointF(x, y), 15, 15)
+             # Center circle
              painter.drawEllipse(QPointF(center_x, center_y), core_radius + pulse, core_radius + pulse)
         else:
              painter.drawEllipse(QPointF(center_x, center_y), core_radius, core_radius)
 
         painter.setBrush(Qt.BrushStyle.NoBrush)
 
-        # 2. Middle Ring (Thick Segmented)
+        # 2. Middle Ring (Thick Segmented) - More delicate
         pen = QPen(main_color)
-        pen.setWidth(12)
-        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-        # Dash pattern: [dash_length, space_length, ...]
-        pen.setDashPattern([10, 10]) 
+        pen.setWidth(8)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setDashPattern([12, 8]) 
         painter.setPen(pen)
         
         radius_mid = 100
@@ -176,10 +211,10 @@ class CentralReactor(QWidget):
         painter.drawEllipse(QPointF(0, 0), radius_mid, radius_mid)
         painter.restore()
 
-        # 3. Inner Ring (Thin Dashed)
-        pen = QPen(ACCENT_COLOR) # White
-        pen.setWidth(4)
-        pen.setDashPattern([5, 5])
+        # 3. Inner Ring (Thin Dashed) - Pink accent
+        pen = QPen(ACCENT_COLOR)
+        pen.setWidth(3)
+        pen.setDashPattern([6, 6])
         painter.setPen(pen)
         
         radius_inner = 70
@@ -189,36 +224,48 @@ class CentralReactor(QWidget):
         painter.drawEllipse(QPointF(0, 0), radius_inner, radius_inner)
         painter.restore()
 
-        # 4. Outer Bracket (Semi-circles)
-        pen = QPen(main_color)
+        # 4. Outer Decorative Arcs (Semi-circles) with secondary color
+        pen = QPen(secondary)
         pen.setWidth(3)
         pen.setStyle(Qt.PenStyle.SolidLine)
         painter.setPen(pen)
         radius_outer = 130
         
         rect_outer = QRectF(center_x - radius_outer, center_y - radius_outer, 2*radius_outer, 2*radius_outer)
-        # Draw two arcs
-        start_angle = 30 * 16 # sixteenths of a degree? No, specify in degrees * 16 usually for some QT functions, but drawArc takes startAngle and spanAngle in 1/16th degrees
-        # drawArc(rect, int startAngle, int spanAngle)
-        # 45 degrees to 135 degrees
         
         painter.drawArc(rect_outer, 45 * 16, 90 * 16)
         painter.drawArc(rect_outer, 225 * 16, 90 * 16)
+        
+        # Add sparkle effect - small dots around
+        if not self.is_paused:
+            sparkle_pen = QPen(GLOW_COLOR)
+            sparkle_pen.setWidth(4)
+            painter.setPen(sparkle_pen)
+            for i in range(8):
+                angle = math.radians(i * 45 + self.angle_outer * 0.5)
+                sparkle_distance = 145 + math.sin(self.angle_outer * 0.2 + i) * 10
+                sx = center_x + sparkle_distance * math.cos(angle)
+                sy = center_y + sparkle_distance * math.sin(angle)
+                painter.drawPoint(QPointF(sx, sy))
 
 
-class JarvisGUI(QMainWindow):
+class AnuGUI(QMainWindow):
     def __init__(self, pause_event):
         super().__init__()
         self.pause_event = pause_event
         self.is_paused = False
         
-        self.setWindowTitle("JARVIS HUD")
+        self.setWindowTitle("ANU - AI Assistant")
         self.resize(1000, 600)
         
-        # Frameless and Black Background
+        # Frameless and Themed Background
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setStyleSheet("background-color: black;")
+        # Use deep purple/pink gradient background
+        self.setStyleSheet("""
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                       stop:0 #1A0033, stop:0.5 #2D0A4E, stop:1 #1A0033);
+        """)
         
         # Main Layout
         central_widget = QWidget()
@@ -262,6 +309,6 @@ class JarvisGUI(QMainWindow):
 
 def run_gui(pause_event):
     app = QApplication(sys.argv)
-    window = JarvisGUI(pause_event)
+    window = AnuGUI(pause_event)
     window.show()
     sys.exit(app.exec())
