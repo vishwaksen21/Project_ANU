@@ -62,22 +62,48 @@ class AnuEngine:
             error_str = str(e)
             if "tool_use_failed" in error_str and "failed_generation" in error_str:
                 try:
+                    # Try multiple patterns for malformed tool calls
+                    # Pattern 1: <function=NAME{ARGS}</function>
                     match = re.search(r"<function=(\w+)(?:.*?)(?=\{)(\{.*?\})<\/function>", error_str)
+                    
+                    # Pattern 2: <function=NAME=ARGS</function>
+                    if not match:
+                        match = re.search(r"<function=(\w+)=(.*?)</function>", error_str)
+                    
                     if match:
                         func_name = match.group(1)
                         func_args_str = match.group(2)
                         print(f"DEBUG: Recovered failed tool call: {func_name} with {func_args_str}")
                         
-                        function_to_call = self.registry.get_function(func_name)
+                        # Handle common tool name aliases
+                        tool_aliases = {
+                            "open_app": "open_application",
+                            "play_song": "play_music",
+                            "search": "web_search"
+                        }
+                        
+                        actual_func_name = tool_aliases.get(func_name, func_name)
+                        if actual_func_name != func_name:
+                            print(f"DEBUG: Aliasing {func_name} → {actual_func_name}")
+                        
+                        function_to_call = self.registry.get_function(actual_func_name)
                         if function_to_call:
                             try:
                                 args = json.loads(func_args_str)
                                 res = function_to_call(**args)
-                                return str(res)
+                                
+                                # Add to history and return natural response
+                                result_msg = str(res)
+                                self.history.add_message("assistant", result_msg)
+                                return result_msg
                             except Exception as exec_e:
                                 return f"Error executing recovered tool: {exec_e}"
+                        else:
+                            return f"I tried to use {func_name}, but that tool isn't available."
                 except Exception as parse_e:
                     print(f"Failed to recover tool call: {parse_e}")
+                    import traceback
+                    traceback.print_exc()
 
             print(f"Groq API Error: {e}")
             return "I am having trouble connecting to the brain, sir."
@@ -159,15 +185,26 @@ class AnuEngine:
                     # Try to parse and execute manually
                     try:
                         # Extract JSON objects from text
-                        import re
                         json_pattern = r'\{"type":\s*"function"[^}]*"name":\s*"([^"]+)"[^}]*"parameters":\s*(\{[^}]*\})\}'
                         matches = re.findall(json_pattern, response_text)
                         
                         if matches:
                             print(f"Found {len(matches)} tool calls in text, executing manually...")
                             
+                            # Tool name aliases
+                            tool_aliases = {
+                                "open_app": "open_application",
+                                "play_song": "play_music",
+                                "search": "web_search"
+                            }
+                            
                             for func_name, params_str in matches:
-                                function_to_call = self.registry.get_function(func_name)
+                                # Apply alias if exists
+                                actual_func_name = tool_aliases.get(func_name, func_name)
+                                if actual_func_name != func_name:
+                                    print(f"Aliasing: {func_name} → {actual_func_name}")
+                                
+                                function_to_call = self.registry.get_function(actual_func_name)
                                 
                                 if function_to_call:
                                     try:

@@ -163,5 +163,10 @@
     "role": "assistant",
     "content": "{\"type\": \"function\", \"name\": \"play_music\", \"parameters\": {\"app\": \"spotify\", \"search\": \"random\"}}",
     "timestamp": "2026-02-14T22:28:35.925259"
+  },
+  {
+    "role": "user",
+    "content": "play some song in spotify",
+    "timestamp": "2026-02-14T22:30:58.732389"
   }
 ]
