@@ -11,7 +11,7 @@ class AnuEngine:
     def __init__(self, registry: SkillRegistry):
         self.registry = registry
         self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        self.model_name = "gemini-1.5-flash"
+        self.model_name = "gemini-2.5-flash"  # Latest and fastest Gemini model
         self.history = ConversationHistory()
 
         self.system_instruction = (
@@ -45,17 +45,18 @@ class AnuEngine:
         # Convert OpenAI-style tools to Gemini format
         gemini_tools = None
         if tools_schema:
-            gemini_tools = []
+            function_declarations = []
             for tool in tools_schema:
                 if tool.get("type") == "function":
                     func_def = tool.get("function", {})
-                    gemini_tools.append({
-                        "function_declarations": [{
-                            "name": func_def.get("name"),
-                            "description": func_def.get("description", ""),
-                            "parameters": func_def.get("parameters", {})
-                        }]
+                    function_declarations.append({
+                        "name": func_def.get("name"),
+                        "description": func_def.get("description", ""),
+                        "parameters": func_def.get("parameters", {})
                     })
+            
+            if function_declarations:
+                gemini_tools = [{"function_declarations": function_declarations}]
 
         generation_config = {
             "temperature": 0.7,

@@ -12,8 +12,8 @@ from gui.app import run_gui as run_gui_app
 # Load Env
 load_dotenv()
 
-if not os.environ.get("GROQ_API_KEY"):
-    print("Error: GROQ_API_KEY not found.")
+if not os.environ.get("GEMINI_API_KEY"):
+    print("Error: GEMINI_API_KEY not found.")
     sys.exit(1)
 
 def anu_loop(pause_event, registry, args):
