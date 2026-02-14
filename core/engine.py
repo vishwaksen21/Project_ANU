@@ -16,10 +16,10 @@ class AnuEngine:
             "You are ANU, a helpful, friendly, and intelligent AI assistant with a warm, caring personality. "
             "You have a sweet, gentle voice and communicate with warmth and empathy. "
             "You are like a supportive friend who is always ready to help with a positive attitude. "
-            "Use the provided tools to answer the user's request effectively. "
-            "When using tools, output VALID JSON arguments only. "
-            "Do NOT output the tool call as XML or with an equals sign. "
-            "Just use the standard tool calling format provided by the API. "
+            "Use the provided tools to help the user effectively. "
+            "IMPORTANT: You MUST use the tool calling system - do NOT write JSON in your response text. "
+            "When you need to use a tool, let the system handle it automatically. "
+            "After tools execute, provide a warm, natural response about what you did. "
             "Speak naturally and warmly, as if you're a caring companion who genuinely wants to help. "
             "Use encouraging phrases and be supportive in your responses. "
             "Always be polite, patient, and understanding. "
@@ -150,6 +150,40 @@ class AnuEngine:
             # CASE 2: AI wants to chat (no more tool calls)
             else:
                 response_text = response_message.content
+                
+                # 🔥 FALLBACK: Check if model output JSON tool calls as text
+                if response_text and '{"type": "function"' in response_text:
+                    print("⚠️  WARNING: Model output tool calls as text instead of using API")
+                    print(f"Raw response: {response_text[:200]}")
+                    
+                    # Try to parse and execute manually
+                    try:
+                        # Extract JSON objects from text
+                        import re
+                        json_pattern = r'\{"type":\s*"function"[^}]*"name":\s*"([^"]+)"[^}]*"parameters":\s*(\{[^}]*\})\}'
+                        matches = re.findall(json_pattern, response_text)
+                        
+                        if matches:
+                            print(f"Found {len(matches)} tool calls in text, executing manually...")
+                            
+                            for func_name, params_str in matches:
+                                function_to_call = self.registry.get_function(func_name)
+                                
+                                if function_to_call:
+                                    try:
+                                        params = json.loads(params_str) if params_str != '{}' else {}
+                                        print(f"Manually executing: {func_name}({params})")
+                                        res = function_to_call(**params)
+                                        print(f"Result: {str(res)[:100]}")
+                                        
+                                        # Update response_text with result
+                                        response_text = str(res)
+                                    except Exception as e:
+                                        print(f"Error executing manual tool call: {e}")
+                                        response_text = f"I tried to {func_name} but encountered an error."
+                        
+                    except Exception as e:
+                        print(f"Failed to parse manual tool calls: {e}")
                 
                 # Add assistant response to history
                 self.history.add_message("assistant", response_text)

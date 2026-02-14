@@ -143,5 +143,25 @@
     "role": "assistant",
     "content": "{\"type\": \"function\", \"name\": \"open_app\", \"parameters\": {\"app_name\": \"Spotify\"}} \n{\"type\": \"function\", \"name\": \"play_music\", \"parameters\": {\"search\": \"telugu\"}}",
     "timestamp": "2026-02-14T22:23:56.347273"
+  },
+  {
+    "role": "user",
+    "content": "open spotify and play some",
+    "timestamp": "2026-02-14T22:28:18.154180"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"type\": \"function\", \"name\": \"open_app\", \"parameters\": {\"app_name\": \"Spotify\"}} \n{\"type\": \"function\", \"name\": \"play_music\", \"parameters\": {\"app\": \"spotify\"}}",
+    "timestamp": "2026-02-14T22:28:18.667640"
+  },
+  {
+    "role": "user",
+    "content": "play some song",
+    "timestamp": "2026-02-14T22:28:35.420533"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"type\": \"function\", \"name\": \"play_music\", \"parameters\": {\"app\": \"spotify\", \"search\": \"random\"}}",
+    "timestamp": "2026-02-14T22:28:35.925259"
   }
 ]
