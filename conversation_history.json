@@ -168,5 +168,45 @@
     "role": "user",
     "content": "play some song in spotify",
     "timestamp": "2026-02-14T22:30:58.732389"
+  },
+  {
+    "role": "user",
+    "content": "play some music in spotify",
+    "timestamp": "2026-02-14T22:34:01.344807"
+  },
+  {
+    "role": "user",
+    "content": "and play some song",
+    "timestamp": "2026-02-14T22:38:05.219838"
+  },
+  {
+    "role": "user",
+    "content": "open spotify",
+    "timestamp": "2026-02-14T22:38:16.545293"
+  },
+  {
+    "role": "assistant",
+    "content": "I've opened Spotify for you. Now you can enjoy your favorite music. Is there a specific song or playlist you'd like to listen to?",
+    "timestamp": "2026-02-14T22:38:27.085996"
+  },
+  {
+    "role": "user",
+    "content": "play for a",
+    "timestamp": "2026-02-14T22:38:40.129634"
+  },
+  {
+    "role": "assistant",
+    "content": "{'status': 'success', 'message': '\u2713 Opened Spotify'}",
+    "timestamp": "2026-02-14T22:38:46.914668"
+  },
+  {
+    "role": "user",
+    "content": "play for a",
+    "timestamp": "2026-02-14T22:38:54.946632"
+  },
+  {
+    "role": "user",
+    "content": "open spotify",
+    "timestamp": "2026-02-14T22:44:23.286496"
   }
 ]
