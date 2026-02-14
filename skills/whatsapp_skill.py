@@ -1,106 +1,100 @@
 from core.skill import Skill
 import json
 import os
+import subprocess
 from skills.whatsapp.whatsapp_client import WhatsAppClient
+
 
 class WhatsappSkill(Skill):
     """
     Skill for sending WhatsApp messages using Selenium and a local contact list.
     """
-    
+
     def __init__(self):
+        self.contacts_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "contacts.json"
+        )
         self.contacts = self._load_contacts()
-        self.client = None # Lazy load the client
+        self.client = None  # Lazy load
 
     @property
     def name(self):
         return "whatsapp_skill"
-        
-    def _load_contacts(self):
-        contacts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "contacts.json")
-        try:
-            with open(contacts_path, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Error loading contacts: {e}")
-            return {}
-
-    def _get_client(self):
-        if not self.client:
-            self.client = WhatsAppClient()
-        return self.client
 
     def get_tools(self):
+        """Return tool schemas for WhatsApp operations"""
         return [
             {
                 "type": "function",
                 "function": {
                     "name": "send_whatsapp_message",
-                    "description": "Send a WhatsApp message to a specific person by name.",
+                    "description": "Send a WhatsApp message to a contact by name",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "name": {
                                 "type": "string",
-                                "description": "The name of the contact (e.g., 'Dad', 'Mom', 'Ananya')."
+                                "description": "Contact name (from saved contacts)"
                             },
                             "message": {
                                 "type": "string",
-                                "description": "The message to send."
+                                "description": "Message to send"
                             }
                         },
-                        "required": ["name", "message"],
-                    },
-                },
+                        "required": ["name", "message"]
+                    }
+                }
             },
             {
                 "type": "function",
                 "function": {
                     "name": "add_whatsapp_contact",
-                    "description": "Add a new contact to WhatsApp contacts list.",
+                    "description": "Add a new WhatsApp contact",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "name": {
                                 "type": "string",
-                                "description": "The name of the contact."
+                                "description": "Contact name"
                             },
                             "phone_number": {
                                 "type": "string",
-                                "description": "Phone number with country code (e.g., +91 for India, +1 for USA)."
+                                "description": "Phone number with country code"
                             }
                         },
-                        "required": ["name", "phone_number"],
-                    },
-                },
+                        "required": ["name", "phone_number"]
+                    }
+                }
             },
             {
                 "type": "function",
                 "function": {
                     "name": "list_whatsapp_contacts",
-                    "description": "List all WhatsApp contacts saved in the system.",
+                    "description": "List all saved WhatsApp contacts",
                     "parameters": {
                         "type": "object",
                         "properties": {},
-                        "required": [],
-                    },
-                },
+                        "required": []
+                    }
+                }
             },
             {
                 "type": "function",
                 "function": {
                     "name": "import_device_contacts",
-                    "description": "Import all contacts from the device's Contacts app into WhatsApp contacts.",
+                    "description": "Import contacts from macOS Contacts app",
                     "parameters": {
                         "type": "object",
                         "properties": {},
-                        "required": [],
-                    },
-                },
+                        "required": []
+                    }
+                }
             }
         ]
 
     def get_functions(self):
+        """Return mapping of function names to actual methods"""
         return {
             "send_whatsapp_message": self.send_whatsapp_message,
             "add_whatsapp_contact": self.add_whatsapp_contact,
@@ -108,45 +102,61 @@ class WhatsappSkill(Skill):
             "import_device_contacts": self.import_device_contacts
         }
 
+    def _load_contacts(self):
+        try:
+            if not os.path.exists(self.contacts_path):
+                return {}
+
+            with open(self.contacts_path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading contacts: {e}")
+            return {}
+
+    def _save_contacts(self):
+        try:
+            with open(self.contacts_path, "w") as f:
+                json.dump(self.contacts, f, indent=2)
+        except Exception as e:
+            print(f"Error saving contacts: {e}")
+
+    def _get_client(self):
+        if not self.client:
+            self.client = WhatsAppClient()
+        return self.client
+
+    # ---------------- CONTACT MANAGEMENT ---------------- #
+
     def add_whatsapp_contact(self, name, phone_number):
-        """Add a new contact to the contacts list."""
         try:
             clean_name = name.lower().strip()
-            
-            # Clean phone number (remove spaces, dashes)
             clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
-            
-            # Ensure it starts with +
+
             if not clean_phone.startswith("+"):
-                # Assume India (+91) if no country code
-                clean_phone = "+91" + clean_phone
-            
-            # Update contacts
+                clean_phone = "+91" + clean_phone  # Default India
+
             self.contacts[clean_name] = clean_phone
-            
-            # Save to file
-            contacts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "contacts.json")
-            with open(contacts_path, 'w') as f:
-                json.dump(self.contacts, f, indent=2)
-            
-            return f"✓ Contact '{name}' added with number {clean_phone}"
+            self._save_contacts()
+
+            return f"✓ Contact '{name.title()}' added with number {clean_phone}"
+
         except Exception as e:
             return f"Error adding contact: {e}"
-    
+
     def list_whatsapp_contacts(self):
-        """List all saved contacts."""
         if not self.contacts:
-            return "No contacts saved yet. You can add contacts by saying 'Add Ananya's WhatsApp contact with number +91XXXXXXXXXX'"
-        
-        contact_list = "\n".join([f"• {name.title()}: {phone}" for name, phone in self.contacts.items()])
+            return "No contacts saved yet."
+
+        contact_list = "\n".join(
+            [f"• {name.title()}: {phone}" for name, phone in self.contacts.items()]
+        )
+
         return f"Your WhatsApp contacts:\n{contact_list}"
-    
+
+    # ---------------- IMPORT FROM MAC ---------------- #
+
     def import_device_contacts(self):
-        """Import all contacts from macOS Contacts app."""
         try:
-            import subprocess
-            
-            # AppleScript to get all contacts with phone numbers
             applescript = '''
             tell application "Contacts"
                 set contactList to {}
@@ -160,113 +170,103 @@ class WhatsappSkill(Skill):
                 return contactList
             end tell
             '''
-            
-            # Execute AppleScript
+
             result = subprocess.run(
-                ['osascript', '-e', applescript],
+                ["osascript", "-e", applescript],
                 capture_output=True,
                 text=True,
                 timeout=30
             )
-            
+
             if result.returncode != 0:
-                return f"❌ Could not access Contacts app. Error: {result.stderr}"
-            
-            # Parse results
+                return f"❌ Could not access Contacts app: {result.stderr}"
+
             contact_data = result.stdout.strip()
             if not contact_data:
-                return "No contacts found in your Contacts app."
-            
-            # Split by comma (AppleScript list format)
+                return "No contacts found."
+
             contacts_raw = contact_data.split(", ")
-            
+
             imported_count = 0
             skipped_count = 0
-            
-            for contact_entry in contacts_raw:
-                try:
-                    # Split name and phone
-                    if "|" not in contact_entry:
-                        continue
-                    
-                    name, phone = contact_entry.split("|", 1)
-                    name = name.strip()
-                    phone = phone.strip()
-                    
-                    # Clean phone number (remove spaces, dashes, parentheses)
-                    clean_phone = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-                    
-                    # Skip if phone doesn't look valid
-                    if len(clean_phone) < 10:
-                        skipped_count += 1
-                        continue
-                    
-                    # Ensure it starts with +
-                    if not clean_phone.startswith("+"):
-                        # Assume India (+91) if no country code and 10 digits
-                        if len(clean_phone) == 10:
-                            clean_phone = "+91" + clean_phone
-                        else:
-                            # Skip invalid numbers
-                            skipped_count += 1
-                            continue
-                    
-                    # Add to contacts
-                    clean_name = name.lower().strip()
-                    self.contacts[clean_name] = clean_phone
-                    imported_count += 1
-                    
-                except Exception as e:
+
+            for entry in contacts_raw:
+                if "|" not in entry:
+                    continue
+
+                name, phone = entry.split("|", 1)
+                name = name.strip()
+                phone = phone.strip()
+
+                clean_phone = (
+                    phone.replace(" ", "")
+                    .replace("-", "")
+                    .replace("(", "")
+                    .replace(")", "")
+                )
+
+                if len(clean_phone) < 10:
                     skipped_count += 1
                     continue
-            
-            # Save to file
-            contacts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "contacts.json")
-            with open(contacts_path, 'w') as f:
-                json.dump(self.contacts, f, indent=2)
-            
-            return f"✅ Successfully imported {imported_count} contacts from your device! {skipped_count} contacts were skipped (invalid numbers). You now have {len(self.contacts)} total contacts."
-            
+
+                if not clean_phone.startswith("+"):
+                    if len(clean_phone) == 10:
+                        clean_phone = "+91" + clean_phone
+                    else:
+                        skipped_count += 1
+                        continue
+
+                self.contacts[name.lower()] = clean_phone
+                imported_count += 1
+
+            self._save_contacts()
+
+            return (
+                f"✅ Imported {imported_count} contacts. "
+                f"{skipped_count} skipped. "
+                f"Total contacts: {len(self.contacts)}"
+            )
+
         except subprocess.TimeoutExpired:
-            return "❌ Timeout while accessing Contacts app. Please try again."
+            return "❌ Timeout while accessing Contacts app."
         except Exception as e:
             return f"❌ Error importing contacts: {str(e)}"
 
+    # ---------------- SEND MESSAGE ---------------- #
+
     def send_whatsapp_message(self, name, message):
-        """
-        Sends a WhatsApp message to a contact by name.
-        """
-        # 1. Normalize name
         clean_name = name.lower().strip()
-        
-        # 2. Lookup Number
         phone_number = self.contacts.get(clean_name)
-        
+
         if not phone_number:
-            # Provide helpful error with suggestion
-            available = ", ".join(list(self.contacts.keys())[:5])
-            if available:
-                return f"❌ I don't have '{name}' in your WhatsApp contacts. Available contacts: {available}. Would you like to add '{name}' first?"
+            if self.contacts:
+                suggestions = ", ".join(
+                    [n.title() for n in list(self.contacts.keys())[:5]]
+                )
+                return (
+                    f"❌ '{name}' not found.\n"
+                    f"Available contacts: {suggestions}\n"
+                    f"Would you like to add it?"
+                )
             else:
-                return f"❌ I don't have any WhatsApp contacts saved yet. Would you like to add '{name}'? Just tell me their phone number!"
-            
-        # 3. Send Message via Client
+                return (
+                    "❌ No contacts saved yet.\n"
+                    "Tell me the phone number to add one."
+                )
+
         try:
             client = self._get_client()
             result = client.send_message(phone_number, message)
-            
-            # Check if result is a dict with success status
-            if isinstance(result, dict):
-                if result.get("success"):
-                    return f"✅ Message sent to {name.title()}: '{message}'"
-                else:
-                    error_msg = result.get("error", "Unknown error")
-                    return f"❌ Failed to send message to {name}: {error_msg}"
-            else:
-                # Old format compatibility
-                return f"✅ Message sent to {name.title()}: '{message}'"
-                
+
+            if isinstance(result, dict) and not result.get("success"):
+                return f"❌ Failed: {result.get('error')}"
+
+            return f"✅ Message sent to {name.title()}"
+
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return f"❌ Error sending message to {name}: {str(e)}"
+            return f"❌ Error sending message: {str(e)}"
+
+
+def register():
+    """Register the WhatsApp skill"""
+    return WhatsappSkill()
