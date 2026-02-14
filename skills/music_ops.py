@@ -105,9 +105,11 @@ def previous_track() -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Music error: {str(e)}"}
 
-def register(registry):
+def register():
     """Register music control skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("music")
+    skill.register(
         name="play_music",
         func=play_music,
         description="Play music on macOS Music app",
@@ -117,7 +119,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="pause_music",
         func=pause_music,
         description="Pause music playback",
@@ -125,7 +127,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="next_track",
         func=next_track,
         description="Skip to next music track",
@@ -133,7 +135,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="previous_track",
         func=previous_track,
         description="Go to previous music track",
@@ -142,3 +144,4 @@ def register(registry):
     )
 
     print("Loaded skill: music_skill")
+    return skill

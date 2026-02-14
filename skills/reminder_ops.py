@@ -95,9 +95,11 @@ def clear_reminders() -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Failed to clear reminders: {str(e)}"}
 
-def register(registry):
+def register():
     """Register reminder skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("reminders")
+    skill.register(
         name="set_reminder",
         func=set_reminder,
         description="Set a reminder for a task at a specific time",
@@ -108,7 +110,7 @@ def register(registry):
         required=["task"]
     )
     
-    registry.register(
+    skill.register(
         name="list_reminders",
         func=list_reminders,
         description="List all active reminders",
@@ -116,7 +118,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="clear_reminders",
         func=clear_reminders,
         description="Clear all reminders",
@@ -125,3 +127,4 @@ def register(registry):
     )
 
     print("Loaded skill: reminder_skill")
+    return skill

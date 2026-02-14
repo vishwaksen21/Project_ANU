@@ -125,9 +125,11 @@ def read_notes() -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Error reading notes: {str(e)}"}
 
-def register(registry):
+def register():
     """Register clipboard and utilities skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("clipboard")
+    skill.register(
         name="copy_to_clipboard",
         func=copy_to_clipboard,
         description="Copy text to system clipboard",
@@ -137,7 +139,7 @@ def register(registry):
         required=["text"]
     )
     
-    registry.register(
+    skill.register(
         name="get_clipboard",
         func=get_clipboard,
         description="Get text from system clipboard",
@@ -145,7 +147,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="send_notification",
         func=send_notification,
         description="Send a system notification",
@@ -157,7 +159,7 @@ def register(registry):
         required=["title", "message"]
     )
     
-    registry.register(
+    skill.register(
         name="text_to_speech",
         func=text_to_speech,
         description="Convert text to speech with custom voice",
@@ -169,7 +171,7 @@ def register(registry):
         required=["text"]
     )
     
-    registry.register(
+    skill.register(
         name="create_quick_note",
         func=create_quick_note,
         description="Create a quick note with timestamp",
@@ -179,7 +181,7 @@ def register(registry):
         required=["note_text"]
     )
     
-    registry.register(
+    skill.register(
         name="read_notes",
         func=read_notes,
         description="Read all quick notes",
@@ -188,3 +190,4 @@ def register(registry):
     )
 
     print("Loaded skill: clipboard_utils_skill")
+    return skill

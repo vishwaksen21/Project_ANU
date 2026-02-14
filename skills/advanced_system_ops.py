@@ -244,9 +244,11 @@ def get_system_info() -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Error getting system info: {str(e)}"}
 
-def register(registry):
+def register():
     """Register advanced system control skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("advanced_system")
+    skill.register(
         name="open_application",
         func=open_application,
         description="Open any application (Safari, Chrome, VS Code, Spotify, etc.)",
@@ -256,7 +258,7 @@ def register(registry):
         required=["app_name"]
     )
     
-    registry.register(
+    skill.register(
         name="close_application",
         func=close_application,
         description="Close/quit an application",
@@ -266,7 +268,7 @@ def register(registry):
         required=["app_name"]
     )
     
-    registry.register(
+    skill.register(
         name="get_running_apps",
         func=get_running_apps,
         description="List all currently running applications",
@@ -274,7 +276,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="execute_terminal_command",
         func=execute_terminal_command,
         description="Execute safe terminal commands (ls, pwd, date, whoami, etc.)",
@@ -284,7 +286,7 @@ def register(registry):
         required=["command"]
     )
     
-    registry.register(
+    skill.register(
         name="lock_screen",
         func=lock_screen,
         description="Lock the computer screen",
@@ -292,7 +294,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="empty_trash",
         func=empty_trash,
         description="Empty the trash/bin",
@@ -300,7 +302,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="get_system_info",
         func=get_system_info,
         description="Get comprehensive system information (OS, CPU, memory, disk, uptime)",
@@ -309,3 +311,4 @@ def register(registry):
     )
 
     print("Loaded skill: advanced_system_skill")
+    return skill

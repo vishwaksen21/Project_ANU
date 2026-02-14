@@ -166,9 +166,11 @@ def tip_calculator(bill_amount: float, tip_percentage: float = 15, split_between
     except Exception as e:
         return {"status": "error", "message": f"Tip calculation error: {str(e)}"}
 
-def register(registry):
+def register():
     """Register calculator skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("calculator")
+    skill.register(
         name="calculate",
         func=calculate,
         description="Perform mathematical calculations (supports +, -, *, /, sqrt, sin, cos, etc.)",
@@ -178,7 +180,7 @@ def register(registry):
         required=["expression"]
     )
     
-    registry.register(
+    skill.register(
         name="convert_units",
         func=convert_units,
         description="Convert between units (km/miles, kg/lbs, celsius/fahrenheit, etc.)",
@@ -190,7 +192,7 @@ def register(registry):
         required=["value", "from_unit", "to_unit"]
     )
     
-    registry.register(
+    skill.register(
         name="percentage_calculator",
         func=percentage_calculator,
         description="Calculate percentages (what is X% of Y, increase/decrease by X%)",
@@ -202,7 +204,7 @@ def register(registry):
         required=["value", "percentage"]
     )
     
-    registry.register(
+    skill.register(
         name="tip_calculator",
         func=tip_calculator,
         description="Calculate tip and split bill among people",
@@ -215,3 +217,4 @@ def register(registry):
     )
 
     print("Loaded skill: calculator_skill")
+    return skill

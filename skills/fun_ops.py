@@ -90,9 +90,11 @@ def compliment() -> dict:
     compliment_msg = random.choice(compliments)
     return {"status": "success", "message": compliment_msg}
 
-def register(registry):
+def register():
     """Register fun skills"""
-    registry.register(
+    from core.skill import Skill
+    skill = Skill("fun")
+    skill.register(
         name="tell_joke",
         func=tell_joke,
         description="Tell a funny joke to make you laugh",
@@ -100,7 +102,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="fun_fact",
         func=fun_fact,
         description="Share an interesting fun fact",
@@ -108,7 +110,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="motivate",
         func=motivate,
         description="Share a motivational quote to inspire",
@@ -116,7 +118,7 @@ def register(registry):
         required=[]
     )
     
-    registry.register(
+    skill.register(
         name="compliment",
         func=compliment,
         description="Give a nice compliment",
@@ -125,3 +127,4 @@ def register(registry):
     )
 
     print("Loaded skill: fun_skill")
+    return skill
