@@ -31,7 +31,10 @@ class SkillRegistry:
             # First try to find register() function (new simpler pattern)
             if hasattr(module, 'register'):
                 try:
-                    module.register(self)
+                    skill_instance = module.register()  # Call without self
+                    if skill_instance:
+                        self.register_skill(skill_instance)
+                        print(f"Loaded skill: {skill_instance.name}")
                     return  # Successfully registered using function pattern
                 except Exception as e:
                     print(f"Failed to register skill {module_name}: {e}")

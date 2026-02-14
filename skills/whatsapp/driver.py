@@ -29,14 +29,28 @@ class WhatsAppDriver:
 
     @staticmethod
     def _init_driver():
-        print("Initializing Safari Driver...")
+        print("Initializing Chrome Driver...")
         try:
-            # Safari doesn't need webdriver_manager, it's built-in on macOS.
-            # You just need to enable 'Allow Remote Automation' in Safari > Develop menu.
-            driver = webdriver.Safari()
+            # Use Chrome with webdriver_manager for automatic driver management
+            chrome_options = Options()
+            # chrome_options.add_argument('--headless')  # Uncomment for headless mode
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+            
+            # Set user data dir to persist WhatsApp Web session
+            user_data_dir = os.path.expanduser("~/.whatsapp_chrome_profile")
+            chrome_options.add_argument(f'user-data-dir={user_data_dir}')
+            
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
             driver.maximize_window()
+            
+            print("✅ Chrome Driver initialized successfully!")
             return driver
         except Exception as e:
-            print(f"Failed to initialize Safari: {e}")
-            print("Ensure 'Allow Remote Automation' is enabled in Safari's Develop menu.")
+            print(f"❌ Failed to initialize Chrome: {e}")
+            print("Tip: Make sure Chrome browser is installed on your system.")
             raise e
