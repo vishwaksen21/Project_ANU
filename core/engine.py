@@ -11,7 +11,7 @@ class AnuEngine:
     def __init__(self, registry: SkillRegistry):
         self.registry = registry
         self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        self.model_name = "gemini-2.0-flash-exp"
+        self.model_name = "gemini-1.5-flash"
         self.history = ConversationHistory()
 
         self.system_instruction = (
