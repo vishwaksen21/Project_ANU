@@ -254,6 +254,19 @@ class WhatsappSkill(Skill):
         try:
             client = self._get_client()
             result = client.send_message(phone_number, message)
-            return f"✓ Message sent to {name.title()}: '{message}'"
+            
+            # Check if result is a dict with success status
+            if isinstance(result, dict):
+                if result.get("success"):
+                    return f"✅ Message sent to {name.title()}: '{message}'"
+                else:
+                    error_msg = result.get("error", "Unknown error")
+                    return f"❌ Failed to send message to {name}: {error_msg}"
+            else:
+                # Old format compatibility
+                return f"✅ Message sent to {name.title()}: '{message}'"
+                
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return f"❌ Error sending message to {name}: {str(e)}"
