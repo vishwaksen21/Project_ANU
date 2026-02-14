@@ -13,3 +13,4 @@ torchvision
 pywhatkit
 selenium
 webdriver-manager
+feedparser>=6.0.0

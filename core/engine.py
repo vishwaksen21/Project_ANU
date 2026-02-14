@@ -3,12 +3,14 @@ import json
 import re
 from groq import Groq
 from core.registry import SkillRegistry
+from core.conversation_history import ConversationHistory
 
 class AnuEngine:
     def __init__(self, registry: SkillRegistry):
         self.registry = registry
         self.client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         self.model_name = "llama-3.3-70b-versatile"
+        self.history = ConversationHistory()  # Add conversation history
         
         self.system_instruction = (
             "You are ANU, a helpful, friendly, and intelligent AI assistant with a warm, caring personality. "
@@ -20,14 +22,26 @@ class AnuEngine:
             "Just use the standard tool calling format provided by the API. "
             "Speak naturally and warmly, as if you're a caring companion who genuinely wants to help. "
             "Use encouraging phrases and be supportive in your responses. "
-            "Always be polite, patient, and understanding."
+            "Always be polite, patient, and understanding. "
+            "Remember previous conversations to provide context-aware responses."
         )
 
     def run_conversation(self, user_prompt: str) -> str:
-        messages = [
-            {"role": "system", "content": self.system_instruction},
-            {"role": "user", "content": user_prompt}
-        ]
+        # Add user message to history
+        self.history.add_message("user", user_prompt)
+        
+        # Get recent context from history
+        recent_context = self.history.get_recent_context(num_messages=6)  # Last 3 exchanges
+        
+        # Build messages with context
+        messages = [{"role": "system", "content": self.system_instruction}]
+        
+        # Add recent context for continuity
+        for msg in recent_context[:-1]:  # Exclude the last one (current message)
+            messages.append({"role": msg["role"], "content": msg["content"]})
+        
+        # Add current user message
+        messages.append({"role": "user", "content": user_prompt})
         
         try:
             tools_schema = self.registry.get_tools_schema()
@@ -128,8 +142,18 @@ class AnuEngine:
                 model=self.model_name,
                 messages=messages
             )
-            return second_response.choices[0].message.content
+            final_response = second_response.choices[0].message.content
+            
+            # Add assistant response to history
+            self.history.add_message("assistant", final_response)
+            
+            return final_response
         
         # CASE 2: AI wants to chat
         else:
-            return response_message.content
+            response_text = response_message.content
+            
+            # Add assistant response to history
+            self.history.add_message("assistant", response_text)
+            
+            return response_text
