@@ -6,30 +6,33 @@ import speech_recognition as sr
 # Initialize engine globally to avoid re-initialization issues
 engine = pyttsx3.init()
 
-# Set voice to pleasant Indian-style female voice
+# Set voice to classic Indian girl with cute voice
 def set_female_voice():
     voices = engine.getProperty('voices')
     
-    # Try sweet female voices with adjustments for Indian accent feel
-    # Preferences: Samantha (most natural), Karen (Australian - closer to Indian English), Moira (Irish - sweet)
+    # Try voices optimized for cute, sweet Indian girl sound
+    # Preferences: Veena (Indian), Nicky (faster, cuter), Samantha (most natural), Karen (Australian)
     preferred_voices = [
-        ("Samantha", 165, 0.95),  # Slightly slower, fuller volume for sweet tone
-        ("Karen", 170, 0.95),     # Australian English is closer to Indian English
-        ("Moira", 168, 0.95),     # Irish accent, very sweet
-        ("Tessa", 170, 0.95),     # South African, also pleasant
-        ("Kate", 165, 0.95),      # British, elegant
-        ("Victoria", 165, 0.95),  # Also very clear
+        ("Veena", 175, 0.98),      # Indian English - if available (High priority!)
+        ("Nicky", 180, 0.98),      # Young, cute sounding
+        ("Samantha", 170, 0.98),   # Natural, slightly faster for cuteness
+        ("Karen", 175, 0.98),      # Australian English (similar to Indian English)
+        ("Moira", 175, 0.98),      # Irish accent, very sweet
+        ("Tessa", 175, 0.98),      # South African, pleasant
     ]
     
     for voice_name, rate, volume in preferred_voices:
         for voice in voices:
             if voice_name in voice.name:
                 engine.setProperty('voice', voice.id)
-                engine.setProperty('rate', rate)  # Slightly slower for sweeter sound
-                engine.setProperty('volume', volume)  # Fuller volume
-                # Add slight pitch variation for sweeter tone
-                engine.setProperty('pitch', 1.1)  # Slightly higher pitch (if supported)
-                print(f"Voice set to: {voice_name} (Sweet Indian-style female)")
+                engine.setProperty('rate', rate)  # Balanced for cute, energetic tone
+                engine.setProperty('volume', volume)  # Full, clear volume
+                # Higher pitch for cuter, more youthful sound
+                try:
+                    engine.setProperty('pitch', 1.2)  # Higher pitch for cute voice
+                except:
+                    pass  # Some engines don't support pitch
+                print(f"Voice set to: {voice_name} (Classic Indian girl with cute voice)")
                 return
     
     # Last fallback to any female voice
@@ -64,9 +67,25 @@ def speak(text):
             try:
                 # Escape quotes to prevent shell injection/errors
                 clean_text = text.replace('"', '\\"').replace("'", "")
-                # Use Samantha voice with rate adjustment for sweeter, Indian-style speech
-                # Rate 165 is slightly slower for a more gentle, caring tone
-                os.system(f'say -v Samantha -r 165 "{clean_text}"')
+                # Try Veena (Indian English) first, then Nicky (cute), then Samantha
+                # Rate 175-180 for energetic, cute tone with higher pitch
+                # Try voices in priority order
+                voice_options = [
+                    ("Veena", 180),    # Indian English
+                    ("Nicky", 185),    # Cute, young sounding
+                    ("Samantha", 175), # Natural fallback
+                ]
+                
+                # Check which voices are available
+                available_voices = os.popen('say -v "?"').read().lower()
+                
+                for voice, rate in voice_options:
+                    if voice.lower() in available_voices:
+                        os.system(f'say -v {voice} -r {rate} "{clean_text}"')
+                        return
+                
+                # Ultimate fallback
+                os.system(f'say -v Samantha -r 175 "{clean_text}"')
                 return
             except Exception as e2:
                 print(f"TTS Fallback Error: {e2}")
